@@ -52,6 +52,12 @@ public class Program
                 b => b.MigrationsAssembly("StreamingVideoIndexer"));
         });
 
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = configuration.GetConnectionString("RedisConnection");
+            options.InstanceName = "StreamingVideoWebApi:";
+        });
+
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
