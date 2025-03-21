@@ -74,6 +74,14 @@ public class Program
 
         app.MapControllers();
 
+        // allow all origins
+        app.UseCors(builder =>
+        {
+            builder.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        });
+
         app.Run();
     }
 }
