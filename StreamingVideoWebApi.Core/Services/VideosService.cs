@@ -38,4 +38,26 @@ public class VideosService : IVideosService
         ));
         return indexedVideos;
     }
+
+    public async Task<Option<IndexedVideoVO>> GetIndexedVideo(Guid id)
+    {
+        var indexedFile = await _indexedFilesRepository.GetIndexedFile(id);
+        if (!indexedFile.HasValue)
+        {
+            return Option.None<IndexedVideoVO>();
+        }
+
+        return indexedFile.Map(indexedFile => new IndexedVideoVO(
+            id: indexedFile.Id,
+            name: indexedFile.Name,
+            path: indexedFile.Path,
+            description: indexedFile.Description == null ? Option.None<string>() : Option.Some(indexedFile.Description),
+            thumbnailUrl: indexedFile.ThumbnailPath == null ?
+                Option.None<string>() :
+                Option.Some(_s3StorageService.SignRemoteFileUrl(indexedFile.ThumbnailRemoteKey)),
+            size: indexedFile.Size,
+            createdAt: indexedFile.CreatedAt,
+            duration: indexedFile.Duration
+            ));
+    }
 }

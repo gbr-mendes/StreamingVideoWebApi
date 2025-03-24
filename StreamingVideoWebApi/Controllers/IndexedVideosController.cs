@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
+using Optional.Unsafe;
 using StreamingVideoWebApi.Core.DTOs;
 using StreamingVideoWebApi.Core.Interfaces.Services;
 using StreamingVideoWebApi.Core.ValueObjects;
+using System.Net.Http.Headers;
 using System.Text.Json;
 
 namespace StreamingVideoWebApi.Controllers;
@@ -51,5 +53,34 @@ public class IndexedVideosController : ControllerBase
         {
             return BadRequest(ex.Message);
         }
+    }
+
+    [HttpGet("api/videos/{videoId}")]
+    public async Task<IActionResult> StreamVideo(string videoId, long? start = 0, long? end = null)
+    {
+        var videoMaybe = await _videosService.GetIndexedVideo(Guid.Parse(videoId.Replace("-", "").Replace("_", "")));
+        if (!videoMaybe.HasValue)
+        {
+            return NotFound();
+        }
+        
+        var video = videoMaybe.ValueOrFailure();
+
+        var fileLength = video.Size;
+        end ??= fileLength - 1;
+
+        if (start >= fileLength || end >= fileLength)
+        {
+            return BadRequest("Invalid range");
+        }
+
+        var fileStream = new FileStream(video.Path, FileMode.Open, FileAccess.Read);
+        fileStream.Seek(start.Value, SeekOrigin.Begin);
+
+        var contentRange = new ContentRangeHeaderValue(start.Value, end.Value, fileLength);
+        Response.Headers.Add("Content-Range", contentRange.ToString());
+        Response.StatusCode = 206; // Partial Content
+
+        return File(fileStream, "video/mp4", enableRangeProcessing: true);
     }
 }

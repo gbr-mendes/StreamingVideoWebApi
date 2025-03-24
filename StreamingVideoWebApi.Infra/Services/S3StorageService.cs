@@ -34,7 +34,7 @@ public class S3StorageService : IS3StorageService
                 BucketName = _s3Config.BucketName,
                 Key = key,
                 Expires = DateTime.UtcNow.AddHours(1), // TODO: Define the expiration time on appsettings
-                Protocol = Protocol.HTTP
+                Protocol = Protocol.HTTP,
             };
             var mediaUrl = _s3Client.GetPreSignedURL(request);
             CacheUrl(cacheKey, mediaUrl);
